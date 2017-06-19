@@ -16,8 +16,10 @@ export(float) var LinearDamping = 0.05;
 export(Vector2) var Gravity = Vector2(0, 982);
 
 export(NodePath) var PlayerSpritePath;
+export(NodePath) var PlayerGrappleGunPath;
 
 onready var mPlayerSprite = get_node(PlayerSpritePath);
+onready var mGrappleGun = get_node(PlayerGrappleGunPath);
 
 var mIsGrounded = false;
 var mJumpAction = false;
@@ -87,7 +89,7 @@ func _process(delta):
 		else:
 			mPlayerSprite.set_animation("IdlePose");
 	else:
-		if(get_velocity().y < 0):
+		if(get_velocity().y < 120):
 			mPlayerSprite.set_animation("Ascend");
 		else:
 			mPlayerSprite.set_animation("Descend");
@@ -106,13 +108,19 @@ func _fixed_process(delta):
 	
 	# Player acceleration
 	if(abs(newVelocity.x) <= MaxRunSpeed || sign(newVelocity.x) != sign(mHorizontalAxis)):
-		newVelocity.x = clamp(newVelocity.x + mHorizontalAxis * Acceleration * (1.0 if mIsGrounded else (AirControl if sign(newVelocity.x) == sign(mHorizontalAxis) else AirControl * 2.0)) * delta, -MaxRunSpeed, MaxRunSpeed)
+		
+		var control = 1.0 if mIsGrounded else (AirControl if sign(newVelocity.x) == sign(mHorizontalAxis) else AirControl * 2.0);
+		
+		
+		newVelocity.x = clamp(newVelocity.x + mHorizontalAxis * Acceleration * control * delta, min(newVelocity.x, -MaxRunSpeed), max(newVelocity.x, MaxRunSpeed));
 	
 	# Gravity and jumping
 	newVelocity += Gravity * delta;
 	newVelocity.y -= JumpForce if mJumpAction && mIsGrounded else 0;
 	mJumpAction = false;
 	
+	if(mGrappleGun.mHookInstance != null && mGrappleGun.mHookInstance.mHooked):
+		newVelocity += (mGrappleGun.mHookInstance.get_global_pos() - get_global_pos()).normalized() * 5000.0 * delta;
 	
 	set_velocity(newVelocity);
 	player_move(get_velocity() * delta);
