@@ -3,14 +3,25 @@ extends Node2D
 export(PackedScene) var HookScene;
 
 var mHookInstance = null;
+var mUseMouse = true;
 
-const MaxHookDistance = 500;
+var mAimDirection = Vector2(1, 0);
+var mAimTarget = Vector2(0, 0);
+var mValidTarget = false;
+const MaxHookDistance = 400;
 
 func _input(event):
-	if(event.is_action_pressed("fire_hook")):
+	if(event.type == InputEvent.JOYSTICK_MOTION):
+		if(event.is_action("hook_aim_axis_x+") || event.is_action("hook_aim_axis_x-")):
+			mAimDirection.x = event.value;
+		elif(event.is_action("hook_aim_axis_y+") || event.is_action("hook_aim_axis_y-")):
+			mAimDirection.y = event.value;
+			
+	elif(event.type == InputEvent.MOUSE_MOTION):
+		mAimDirection = get_global_mouse_pos() - get_global_pos();
+	elif(event.is_action_pressed("fire_hook")):
 		fire_hook();
-		
-	if(event.is_action_released("fire_hook")):
+	elif(event.is_action_released("fire_hook")):
 		release_hook();
 
 func _ready():
@@ -19,16 +30,34 @@ func _ready():
 	set_fixed_process(true);
 
 func _process(delta):
-	if(mHookInstance != null): 
-		update();
+	
+	update();
 
 func _fixed_process(delta):
+	set_global_rot(mAimDirection.angle());
+	
+	var traceDir = mAimDirection.normalized();
+	var traceLength = MaxHookDistance;
+	
+	var traceStart = get_global_pos();
+	var traceEnd = get_global_pos() + (traceDir * traceLength);
+	
+	var trace = get_world_2d().get_direct_space_state().intersect_ray(traceStart, traceEnd, [], 1, 1);
+	mValidTarget = !trace.empty();
+	mAimTarget = (trace.position if(mValidTarget) else traceEnd);
+	
 	if(mHookInstance != null): 
 		if((mHookInstance.get_global_pos() - get_global_pos()).length_squared() > MaxHookDistance * MaxHookDistance):
 			release_hook();
 
+const HitColor = Color(0.3, 0.6, 0.3, 0.4);
+const MissColor = Color(0.6, 0.3, 0.3, 0.3);
+
 func _draw():
+	
 	draw_set_transform_matrix(get_global_transform().inverse());
+	draw_line(get_global_pos(), mAimTarget, HitColor if mValidTarget else MissColor, 2);
+	
 	if(mHookInstance != null): 
 		draw_line(get_global_pos(), mHookInstance.get_global_pos(), Color(0.3, 0.2, 0.2), 5);
 
@@ -42,15 +71,7 @@ func fire_hook():
 	get_tree().get_root().add_child(mHookInstance);
 	mHookInstance.set_global_pos(get_global_pos());
 	
-	var traceDir = (get_global_mouse_pos() - get_global_pos()).normalized();
-	var traceLength = MaxHookDistance;
-	
-	var traceStart = get_global_pos() + (traceDir * 15);
-	var traceEnd = get_global_pos() + (traceDir * traceLength);
-	
-	var trace = get_world_2d().get_direct_space_state().intersect_ray(traceStart, traceEnd);
-	
-	mHookInstance.mTarget = trace.position if(!trace.empty()) else traceEnd + traceDir * 99999;
+	mHookInstance.mTarget = mAimTarget + (Vector2(0,0) if mValidTarget else mAimDirection * 99999);
 	
 
 func release_hook():

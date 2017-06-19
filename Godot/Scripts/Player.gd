@@ -104,25 +104,36 @@ func _fixed_process(delta):
 	
 	set_speed(get_speed() * (1 - LinearDamping * delta));
 	
-	var newVelocity = get_velocity();
+	var velocityAdd = Vector2(0, 0);
+	var curVelocity = get_velocity();
 	
-	# Player acceleration
-	if(abs(newVelocity.x) <= MaxRunSpeed || sign(newVelocity.x) != sign(mHorizontalAxis)):
+	# Player horisontal acceleration
+	if(abs(curVelocity.x) <= MaxRunSpeed || sign(curVelocity.x) != sign(mHorizontalAxis)):
+		var control = 1.0 if mIsGrounded else (AirControl if sign(curVelocity.x) == sign(mHorizontalAxis) else AirControl * 2.0);
 		
-		var control = 1.0 if mIsGrounded else (AirControl if sign(newVelocity.x) == sign(mHorizontalAxis) else AirControl * 2.0);
-		
-		
-		newVelocity.x = clamp(newVelocity.x + mHorizontalAxis * Acceleration * control * delta, min(newVelocity.x, -MaxRunSpeed), max(newVelocity.x, MaxRunSpeed));
+		velocityAdd.x += clamp(curVelocity.x + mHorizontalAxis * Acceleration * control * delta, min(curVelocity.x, -MaxRunSpeed), max(curVelocity.x, MaxRunSpeed)) - curVelocity.x;
 	
 	# Gravity and jumping
-	newVelocity += Gravity * delta;
-	newVelocity.y -= JumpForce if mJumpAction && mIsGrounded else 0;
+	velocityAdd += Gravity * delta;
+	velocityAdd.y -= JumpForce if mJumpAction && mIsGrounded else 0;
 	mJumpAction = false;
 	
 	if(mGrappleGun.mHookInstance != null && mGrappleGun.mHookInstance.mHooked):
-		newVelocity += (mGrappleGun.mHookInstance.get_global_pos() - get_global_pos()).normalized() * 5000.0 * delta;
+		var hookOffset = mGrappleGun.mHookInstance.get_global_pos() - get_global_pos();
+		var hookDistance = hookOffset.length();
+		var direction = hookOffset / hookDistance;
+		
+		var MinNormalSpeed = 0;
+		var MaxNormalSpeed = 50;
+		
+		var normalForce = clamp(get_velocity().dot(direction) * -1, MinNormalSpeed, MaxNormalSpeed);
+		
+		var NormalForceFactor = 650;
+		var distanceFactor = lerp(0.15, 0.65, hookDistance / mGrappleGun.MaxHookDistance);
+		
+		velocityAdd += direction * (normalForce * distanceFactor * NormalForceFactor * delta);
 	
-	set_velocity(newVelocity);
+	set_velocity(curVelocity + velocityAdd);
 	player_move(get_velocity() * delta);
 	mIsGrounded = player_ground_test();
 	
@@ -154,8 +165,9 @@ func player_move(moveVector):
 		if(abs(remainderFactor) > 0):
 			player_move(moveRemainder - surfaceNormal * remainderFactor);
 
+const TestDepth = 4;
 func player_ground_test():
-	return test_move(Vector2(0, 1));
+	return test_move(Vector2(0, TestDepth));
 
 	
 	
