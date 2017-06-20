@@ -121,17 +121,21 @@ func _fixed_process(delta):
 	if(mGrappleGun.mHookInstance != null && mGrappleGun.mHookInstance.mHooked):
 		var hookOffset = mGrappleGun.mHookInstance.get_global_pos() - get_global_pos();
 		var hookDistance = hookOffset.length();
-		var direction = hookOffset / hookDistance;
+		var hookDirection = hookOffset / hookDistance;
 		
-		var MinNormalSpeed = 0;
+		var pull = Input.is_action_pressed("pull_hook");
+		
+		#var MinNormalSpeed = 0;
+		var MinNormalSpeed = 7.5 if pull else 0;
 		var MaxNormalSpeed = 50;
 		
-		var normalForce = clamp(get_velocity().dot(direction) * -1, MinNormalSpeed, MaxNormalSpeed);
+		var normalForce = clamp(get_velocity().dot(hookDirection) * -1, MinNormalSpeed, MaxNormalSpeed);
 		
+		#var NormalForceFactor = 650;
 		var NormalForceFactor = 650;
 		var distanceFactor = lerp(0.15, 0.65, hookDistance / mGrappleGun.MaxHookDistance);
 		
-		velocityAdd += direction * (normalForce * distanceFactor * NormalForceFactor * delta);
+		velocityAdd += hookDirection * (normalForce * distanceFactor * NormalForceFactor * delta);
 	
 	set_velocity(curVelocity + velocityAdd);
 	player_move(get_velocity() * delta);

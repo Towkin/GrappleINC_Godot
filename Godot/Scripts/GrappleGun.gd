@@ -12,13 +12,9 @@ const MaxHookDistance = 400;
 
 func _input(event):
 	if(event.type == InputEvent.JOYSTICK_MOTION):
-		if(event.is_action("hook_aim_axis_x+") || event.is_action("hook_aim_axis_x-")):
-			mAimDirection.x = event.value;
-		elif(event.is_action("hook_aim_axis_y+") || event.is_action("hook_aim_axis_y-")):
-			mAimDirection.y = event.value;
-			
+		mUseMouse = false;
 	elif(event.type == InputEvent.MOUSE_MOTION):
-		mAimDirection = get_global_mouse_pos() - get_global_pos();
+		mUseMouse = true;
 	elif(event.is_action_pressed("fire_hook")):
 		fire_hook();
 	elif(event.is_action_released("fire_hook")):
@@ -30,7 +26,13 @@ func _ready():
 	set_fixed_process(true);
 
 func _process(delta):
-	
+	if(mUseMouse):
+		mAimDirection = get_global_mouse_pos() - get_global_pos();
+	else:
+		var newDir = Vector2(Input.get_joy_axis(0, JOY_AXIS_2), Input.get_joy_axis(0, JOY_AXIS_3));
+		if(newDir.length() > 0.5):
+			mAimDirection = newDir;
+		
 	update();
 
 func _fixed_process(delta):
