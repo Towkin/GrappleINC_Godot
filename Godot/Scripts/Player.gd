@@ -1,15 +1,14 @@
 extends KinematicBody2D
 
-
-export(float) var MaxRunSpeed = 600.0;
+export(float) var MaxRunSpeed = 300.0;
 export(float) var MaxSpeed = 5000.0;
-export(float) var Acceleration = 4000.0;
-export(float) var JumpForce = 400;
+export(float) var Acceleration = 1000.0;
+export(float) var JumpForce = 450;
 export(float) var AirControl = 0.25;
 
-export(float) var GroundFriction = 3000.0;
+export(float) var GroundFriction = 800.0;
 export(float) var Restitution = 0.2;
-export(float) var MinBounceSpeed = 800;
+export(float) var MinBounceSpeed = 700;
 export(float) var MaxBounceSpeed = 2000;
 
 export(float) var LinearDamping = 0.05;

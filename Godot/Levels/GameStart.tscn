@@ -232,7 +232,7 @@ texture/offset = Vector2( 0, 0 )
 texture/scale = Vector2( 1, 1 )
 texture/rotation = 0.0
 invert/enable = true
-invert/border = 100.0
+invert/border = 1000.0
 __meta__ = {
 "_edit_lock_": true
 }
